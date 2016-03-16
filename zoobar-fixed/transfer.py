@@ -13,8 +13,13 @@ def transfer():
     try:
         if 'recipient' in request.form:
             zoobars = symint(request.form['zoobars'])
+            if zoobars < 0 :
+                raise ValueError()
+            recipient = request.form['recipient']
+            if recipient == g.user.person.username: 
+                raise ValueError()
             bank.transfer(g.user.person.username,
-                          request.form['recipient'], zoobars)
+                          recipient, zoobars)
             warning = "Sent %d zoobars" % zoobars
     except (KeyError, ValueError, AttributeError) as e:
         traceback.print_exc()

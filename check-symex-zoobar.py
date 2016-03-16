@@ -37,11 +37,16 @@ def test_stuff():
   adduser(pdb, 'alice', 'atok')
   adduser(pdb, 'bob', 'btok')
   balance1 = sum([p.zoobars for p in pdb.query(zoobar.zoodb.Person).all()])
+  theft_list = {}
+  for p in pdb.query(zoobar.zoodb.Person).all():
+    theft_list[p.username] = p.zoobars
+
   pdb.commit()
 
   tdb = zoobar.zoodb.transfer_setup()
   tdb.query(zoobar.zoodb.Transfer).delete()
   tdb.commit()
+
 
   environ = {}
   environ['wsgi.url_scheme'] = 'http'
@@ -77,10 +82,17 @@ def test_stuff():
 
   ## Exercise 6: your code here.
 
+  balance2 = sum([p.zoobars for p in pdb.query(zoobar.zoodb.Person).all()])
+  if not balance1 == balance2:
+    report_balance_mismatch()
   ## Detect balance mismatch.
   ## When detected, call report_balance_mismatch()
 
   ## Detect zoobar theft.
+  transfer_data = [t.sender for t in tdb.query(zoobar.zoodb.Transfer).all()]
+  for p in pdb.query(zoobar.zoodb.Person).all():
+    if (p.zoobars < theft_list[p.username])  & (p.username not in transfer_data):
+        report_zoobar_theft()
   ## When detected, call report_zoobar_theft()
 
 fuzzy.concolic_test(test_stuff, maxiter=2000, verbose=1)

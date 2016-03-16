@@ -7,6 +7,11 @@ import sqlalchemy.orm
 oldget = sqlalchemy.orm.query.Query.get
 def newget(query, primary_key):
   ## Exercise 5: your code here.
+  p_key = query.first().__table__.primary_key.columns.keys()[0]
+  for row in query.all():
+  	if getattr(row, p_key) == primary_key:
+  		return row
+  
   ##
   ## Find the object with the primary key "primary_key" in SQLalchemy
   ## query object "query", and do so in a symbolic-friendly way.

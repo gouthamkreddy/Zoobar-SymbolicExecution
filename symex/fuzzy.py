@@ -544,6 +544,14 @@ class concolic_str(str):
   ## Implement symbolic versions of string length (override __len__)
   ## and contains (override __contains__).
 
+  def __len__(self):
+    res = len(self.__v)
+    return concolic_int(sym_length(ast(self)), res)
+
+  def __contains__(self, o):
+    res =  o in self.__v
+    return concolic_bool(sym_contains(ast(self), ast(o)), res)
+
   def startswith(self, o):
     res = self.__v.startswith(o)
     return concolic_bool(sym_startswith(ast(self), ast(o)), res)
@@ -700,20 +708,27 @@ def concolic_test(testfunc, maxiter = 100, verbose = 0):
         print indent(z3expr(c, True)), '@', '%s:%d' % (caller[0], caller[1])
 
 
+   
+
+    ## for each branch, invoke Z3 to find an input that would go
+    ## the other way, and add it to the list of inputs to explore.
+
+    ## Exercise 3: your code here.
+
     for i in range(len(cur_path_constr)):
-        pred = cur_path_constr[i]
-        pred_not = sym_not(cur_path_constr[i])
-        iter = 0
-        while iter < i:
-            pred = sym_and(pred,cur_path_constr[iter])    
-            pred_not = sym_and(pred_not,cur_path_constr[iter])
-            iter = iter+1
-        if pred in checked:
+        predicate = cur_path_constr[i]
+        predicate_not = sym_not(cur_path_constr[i])
+        j = 0
+        while j < i:
+            predicate = sym_and(predicate,cur_path_constr[j])    
+            predicate_not = sym_and(predicate_not,cur_path_constr[j])
+            j = j+1
+        if predicate in checked:
             continue
-        checked.add(pred)
-        if pred_not not in checked:
-                checked.add(pred_not)
-                (ok, model) = fork_and_check(pred_not)
+        checked.add(predicate)
+        if predicate_not not in checked:
+                checked.add(predicate_not)
+                (ok, model) = fork_and_check(predicate_not)
                 if ok == z3.unsat:
                     continue
                 new_values = {}
@@ -722,11 +737,6 @@ def concolic_test(testfunc, maxiter = 100, verbose = 0):
                 for sym in model:
                     new_values[sym] = model[sym]
                 inputs.add(new_values, cur_path_constr_callers[i])
-
-    ## for each branch, invoke Z3 to find an input that would go
-    ## the other way, and add it to the list of inputs to explore.
-
-    ## Exercise 3: your code here.
     ##
     ## Here's a possible plan of attack:
     ##
